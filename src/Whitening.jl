@@ -4,6 +4,8 @@ using LinearAlgebra
 
 export WhiteningAlgorithm, whiten, distances
 
+# public Kernel
+
 #=
 On whitening and Mahalanobis distance with rank-deficient covariance matrices
 
@@ -40,6 +42,33 @@ yet another advantage over the Cholesky approach.
 
 @enum WhiteningAlgorithm::Int8 ZCA Chol PCA
 
+ispossemidef(A::Matrix{T}) where {T<:AbstractFloat} = all(≥(-eps(T)), eigvals(A))
+
+struct Kernel{T<:Base.IEEEFloat}
+    μ::Vector{T}
+    Σ::Matrix{T}
+    # Unless Σ is full-rank, this is just pinv
+    # Σ⁻¹::Matrix{T}
+    # The SVD of Σ
+    F::SVD{T,T,Matrix{T},Vector{T}}
+    I::Vector{Int}
+    function Kernel{T}(μ::Vector{T}, Σ::Matrix{T}) where {T<:Base.IEEEFloat}
+        if length(μ) == size(Σ, 1) == size(Σ, 2)
+            if ispossemidef(Σ)
+                F = svd(Σ)
+                new{T}(μ, Σ, F, findall(≥(eps(T)), F.S))
+            else
+                error("Σ should must be positive semi-definite")
+            end
+        else
+            error("μ must be ∈ ℝⁿ and Σ ∈ ℝⁿˣⁿ")
+        end
+    end
+end
+Kernel(μ::Vector{T}, Σ::Matrix{T}) where {T<:Base.IEEEFloat} = Kernel{T}(μ, Σ)
+Kernel(μ::AbstractVector{T}, Σ::AbstractMatrix{T}) where {T<:Base.IEEEFloat} =
+    Kernel{T}(collect(μ), collect(Σ))
+
 function distances(
     xs::AbstractVector{T},
     μ::AbstractVector{U},
@@ -54,11 +83,17 @@ function distances(
         _chol_distances(xs, μ, Σ)
     end
 end
-distances(
+function distances(
     xs::AbstractVector{T},
-    Κ::Kernel;
+    K::Kernel;
     alg::WhiteningAlgorithm = PCA,
-) where {U<:Base.IEEEFloat,T<:AbstractVector{U}} = distances(xs, K.μ, K.Σ, alg = alg)
+) where {U<:Base.IEEEFloat,T<:AbstractVector{U}}
+    if alg == PCA
+        _pca_distances(K)
+    else
+        distances(xs, K.μ, K.Σ, alg = alg)
+    end
+end
 
 function _zca_mahalanobis(x, μ, Σ⁻¹)
     δ = x - μ
@@ -73,7 +108,11 @@ function _zca_distances(
     map(x -> _zca_mahalanobis(x, μ, Σ⁻¹), xs)
 end
 
-function _whiten_mahalanobis(x, μ, W)
+function _whiten_mahalanobis(
+    x::AbstractVector{T},
+    μ::AbstractVector{T},
+    W::AbstractMatrix{T},
+) where {T<:Real}
     z = W * (x - μ)
     √(z ⋅ z)
 end
@@ -103,9 +142,18 @@ function _pca_distances(
     Σ::AbstractMatrix{U},
 ) where {T<:AbstractVector{U}} where {U<:Base.IEEEFloat}
     F = svd(Σ)
-    I = findall(≥(eps(U)), F.S)
-    W = Diagonal(inv.(sqrt.(F.S[I]))) * F.U'[I, :]
+    I = findall(≥(eps(U)), K.F.S)
+    W = Diagonal(inv.(sqrt.(@view(F.S[I])))) * @view(F.U'[I, :])
     map(x -> _whiten_mahalanobis(x, μ, W), xs)
+end
+
+function _pca_distances(
+    xs::AbstractVector{T},
+    K::Kernel{U},
+) where {T<:AbstractVector{U}} where {U<:Base.IEEEFloat}
+    I = findall(≥(eps(U)), K.F.S)
+    W = Diagonal(inv.(sqrt.(@view(K.F.S[K.I])))) * @view(K.F.U'[K.I, :])
+    map(x -> _whiten_mahalanobis(x, K.μ, W), xs)
 end
 
 function whiten(
@@ -122,6 +170,19 @@ function whiten(
         _zca_whiten(x, μ, Σ)
     end
 end
+function whiten(
+    x::AbstractVector{T},
+    K::Kernel;
+    alg::WhiteningAlgorithm = PCA,
+) where {U<:Base.IEEEFloat,T<:AbstractVector{U}}
+    if alg == PCA
+        _pca_whiten(x, K)
+    else
+        whiten(x, K.μ, K.Σ, alg = alg)
+    end
+end
+
+
 function _zca_whiten(
     x::AbstractVector{T},
     μ::AbstractVector{T},
@@ -147,10 +208,14 @@ function _pca_whiten(
     Σ::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
     F = svd(Σ)
-    # W = inv(Diagonal(inv.((√).(F.S)))) * F.Vt
-    I = findall(≥(eps(Float64)), F.S)
+    I = findall(≥(eps(T)), F.S)
     Diagonal(inv.(sqrt.(F.S[I]))) * F.U'[I, :] * (x - μ)
 end
+
+function _pca_whiten(x, K::Kernel{T}) where {T<:Base.IEEEFloat}
+    Diagonal(inv.(sqrt.(@view(K.F.S[K.I])))) * @view(K.F.U'[K.I, :]) * (x - K.μ)
+end
+
 
 
 end # module Whitening
