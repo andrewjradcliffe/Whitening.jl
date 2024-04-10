@@ -172,9 +172,9 @@ function whiten(
 end
 function whiten(
     x::AbstractVector{T},
-    K::Kernel;
+    K::Kernel{T};
     alg::WhiteningAlgorithm = PCA,
-) where {U<:Base.IEEEFloat,T<:AbstractVector{U}}
+) where {T<:Base.IEEEFloat}
     if alg == PCA
         _pca_whiten(x, K)
     else
@@ -212,7 +212,7 @@ function _pca_whiten(
     Diagonal(inv.(sqrt.(F.S[I]))) * F.U'[I, :] * (x - μ)
 end
 
-function _pca_whiten(x, K::Kernel{T}) where {T<:Base.IEEEFloat}
+function _pca_whiten(x::AbstractVector{T}, K::Kernel{T}) where {T<:Base.IEEEFloat}
     Diagonal(inv.(sqrt.(@view(K.F.S[K.I])))) * @view(K.F.U'[K.I, :]) * (x - K.μ)
 end
 
