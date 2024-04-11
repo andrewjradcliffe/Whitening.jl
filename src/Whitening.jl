@@ -32,7 +32,7 @@ decomposition.
 Eigen-system whitening has several conceptual advantages which arise from
 the fact that we do not try to invert a rank-deficient matrix. This confers
 numerical stability (insofar as can be achieved), as the inversion
-step is simply the inversion of the square root of values ≥(eps(Float64)).
+step is simply the inversion of the square root of eigenvalues ≥(eps(Float64)).
 Moreover, enables this enables one to preserve the rank of the input
 covariance matrix (in contrast, the Cholesky methods result in loss
 due to instability). Lastly, the time and space complexity of the approach
