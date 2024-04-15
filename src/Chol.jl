@@ -1,3 +1,8 @@
+"""
+    Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
+
+Cholesky whitening transform.
+"""
 struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}

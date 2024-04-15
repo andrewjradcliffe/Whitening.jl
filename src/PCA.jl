@@ -1,3 +1,8 @@
+"""
+    PCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
+
+Principal component analysis (PCA) whitening transform.
+"""
 struct PCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}

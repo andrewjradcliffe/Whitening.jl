@@ -1,3 +1,8 @@
+"""
+    ZCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
+
+Zero-phase component analysis (ZCA) whitening transform.
+"""
 struct ZCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}

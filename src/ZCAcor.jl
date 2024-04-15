@@ -1,3 +1,8 @@
+"""
+    ZCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
+
+Scale-invariant zero-phase component analysis (ZCA-cor) whitening transform.
+"""
 struct ZCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}

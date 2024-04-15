@@ -1,3 +1,8 @@
+"""
+    PCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
+
+Scale-invariant principal component analysis (PCA-cor) whitening transform.
+"""
 struct PCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}
