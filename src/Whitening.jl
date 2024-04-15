@@ -1,5 +1,6 @@
 module Whitening
 
+public AbstractWhiteningTransform, PCA, PCAcor, ZCA, ZCAcor, Chol
 public whiten, unwhiten, mahalanobis
 
 using LinearAlgebra
