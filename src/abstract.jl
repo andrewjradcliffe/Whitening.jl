@@ -21,6 +21,11 @@ function unwhiten!(
     mul!(x, kern.W⁻¹, z, true, true)
 end
 
+"""
+    whiten(kernel::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
+
+Transform `x` to a whitened vector, i.e. `z = W * (x - μ)`, using the provided kernel.
+"""
 function whiten(
     kern::AbstractWhiteningTransform{T},
     x::AbstractVector{T},
@@ -28,6 +33,13 @@ function whiten(
     # kern.W * (x - kern.μ)
     whiten!(similar(x), kern, x)
 end
+
+"""
+    unwhiten(kernel::AbstractWhiteningTransform{T}, z::AbstractVector{T}) where {T<:Base.IEEEFloat}
+
+Transform `z` to a non-centered, correlated and scaled vector, i.e.
+`x = μ + W⁻¹ * z`, using the provided kernel. This is the inverse of `whiten(kernel, x)`.
+"""
 function unwhiten(
     kern::AbstractWhiteningTransform{T},
     z::AbstractVector{T},
@@ -36,6 +48,12 @@ function unwhiten(
     # muladd(kern.W⁻¹, z, kern.μ)
     unwhiten!(similar(z), kern, z)
 end
+
+"""
+    mahalanobis(kernel::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
+
+Return the Mahalanobis distance, `√((x - μ)' * Σ⁻¹ * (x - μ))`.
+"""
 function mahalanobis(
     kern::AbstractWhiteningTransform{T},
     x::AbstractVector{T},
