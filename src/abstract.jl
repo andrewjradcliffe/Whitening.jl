@@ -146,9 +146,10 @@ function mahalanobis(
     Z = whiten(kern, X)
     if n == input_size(kern)
         out = similar(Z, m, 1)
+        k = firstindex(Z, 2)
         for j in axes(Z, 2)
             for i in eachindex(axes(Z, 1), axes(out, 1))
-                out[i, 1] += abs2(Z[i, j])
+                out[i, k] += abs2(Z[i, j])
             end
         end
         for i in eachindex(out)
@@ -157,12 +158,13 @@ function mahalanobis(
         out
     else
         out = similar(Z, 1, n)
+        k = firstindex(Z, 1)
         for j in eachindex(axes(Z, 2), axes(out, 2))
             s = zero(T)
             for i in axes(Z, 1)
                 s += abs2(Z[i, j])
             end
-            out[1, j] = √s
+            out[k, j] = √s
         end
         out
     end
