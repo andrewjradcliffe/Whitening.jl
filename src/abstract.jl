@@ -3,6 +3,13 @@ Abstract type to which represents a whitening transformation.
 """
 abstract type AbstractWhiteningTransform{T<:Base.IEEEFloat} end
 
+@inline function input_size(kern::AbstractWhiteningTransform{T}) where {T<:Base.IEEEFloat}
+    size(kern.W⁻¹, 1)
+end
+@inline function output_size(kern::AbstractWhiteningTransform{T}) where {T<:Base.IEEEFloat}
+    size(kern.W, 1)
+end
+
 function whiten!(
     z::AbstractVector{T},
     kern::AbstractWhiteningTransform{T},
@@ -10,7 +17,6 @@ function whiten!(
 ) where {T<:Base.IEEEFloat}
     z .= kern.negWμ
     mul!(z, kern.W, x, true, true)
-    # mul!(z, kern.W, x - kern.μ)
 end
 function unwhiten!(
     x::AbstractVector{T},
@@ -31,7 +37,7 @@ function whiten(
     x::AbstractVector{T},
 ) where {T<:Base.IEEEFloat}
     # kern.W * (x - kern.μ)
-    whiten!(similar(x), kern, x)
+    whiten!(similar(x, output_size(kern)), kern, x)
 end
 
 """
@@ -46,7 +52,7 @@ function unwhiten(
 ) where {T<:Base.IEEEFloat}
     # kern.μ .+ kern.W⁻¹ * z
     # muladd(kern.W⁻¹, z, kern.μ)
-    unwhiten!(similar(z), kern, z)
+    unwhiten!(similar(z, input_size(kern)), kern, z)
 end
 
 """
@@ -70,38 +76,64 @@ function mahalanobis_noalloc(
     x::AbstractVector{T},
 ) where {T<:Base.IEEEFloat}
     s = zero(T)
-    for i in eachindex(kern.negWμ)
+    for i in eachindex(axes(kern.W, 1), kern.negWμ)
         t = @view(kern.W[i, :]) ⋅ x + kern.negWμ[i]
         s += t * t
     end
     √s
 end
 
+function whiten!(
+    Z::AbstractMatrix{T},
+    kern::AbstractWhiteningTransform{T},
+    X::AbstractMatrix{T},
+) where {T<:Base.IEEEFloat}
+    if size(X, 2) == input_size(kern)
+        Z .= kern.negWμ'
+        mul!(Z, X, kern.W', true, true)
+    else
+        Z .= kern.negWμ
+        mul!(Z, kern.W, X, true, true)
+    end
+end
+function unwhiten!(
+    X::AbstractMatrix{T},
+    kern::AbstractWhiteningTransform{T},
+    Z::AbstractMatrix{T},
+) where {T<:Base.IEEEFloat}
+    if size(X, 2) == input_size(kern)
+        X .= kern.μ'
+        mul!(X, Z, kern.W⁻¹', true, true)
+    else
+        X .= kern.μ
+        mul!(X, kern.W⁻¹, Z, true, true)
+    end
+end
 
 function whiten(
     kern::AbstractWhiteningTransform{T},
     X::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
-    if size(X, 2) == size(kern.Σ, 1)
-        # (X .- kern.μ') * kern.W'
-        # muladd(X, kern.W', -(kern.W * kern.μ)')
-        muladd(X, kern.W', kern.negWμ')
+    m, n = size(X)
+    if n == input_size(kern)
+        # muladd(X, kern.W', kern.negWμ')
+        whiten!(similar(X, m, output_size(kern)), kern, X)
     else
-        # kern.W * (X .- kern.μ)
-        # muladd(kern.W, X, -(kern.W * kern.μ))
-        muladd(kern.W, X, kern.negWμ)
+        # muladd(kern.W, X, kern.negWμ)
+        whiten!(similar(X, output_size(kern), n), kern, X)
     end
 end
 function unwhiten(
     kern::AbstractWhiteningTransform{T},
     Z::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
-    if size(Z, 2) == size(kern.Σ, 1)
-        # kern.μ' .+ Z * kern.W⁻¹'
-        muladd(Z, kern.W⁻¹', kern.μ')
+    m, n = size(Z)
+    if n == output_size(kern)
+        # muladd(Z, kern.W⁻¹', kern.μ')
+        unwhiten!(similar(Z, m, input_size(kern)), kern, Z)
     else
-        # kern.μ .+ kern.W⁻¹ * Z
-        muladd(kern.W⁻¹, Z, kern.μ)
+        # muladd(kern.W⁻¹, Z, kern.μ)
+        unwhiten!(similar(Z, input_size(kern), n), kern, Z)
     end
 end
 
@@ -110,9 +142,9 @@ function mahalanobis(
     kern::AbstractWhiteningTransform{T},
     X::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    m, n = size(X)
     Z = whiten(kern, X)
-    m, n = size(Z)
-    if n == size(kern.Σ, 1)
+    if n == input_size(kern)
         out = similar(Z, m, 1)
         for j in axes(Z, 2)
             for i in eachindex(axes(Z, 1), axes(out, 1))
