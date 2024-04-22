@@ -28,9 +28,12 @@ function unwhiten!(
 end
 
 """
-    whiten(kernel::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
+    whiten(K::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
 
-Transform `x` to a whitened vector, i.e. `z = W * (x - μ)`, using the provided kernel.
+Transform `x` to a whitened vector, i.e. `z = W * (x - μ)`, using the transformation
+kernel, `K`.
+
+If `K` compresses `n ↦ p`, then `z ∈ ℝᵖ`.
 """
 function whiten(
     kern::AbstractWhiteningTransform{T},
@@ -41,10 +44,13 @@ function whiten(
 end
 
 """
-    unwhiten(kernel::AbstractWhiteningTransform{T}, z::AbstractVector{T}) where {T<:Base.IEEEFloat}
+    unwhiten(K::AbstractWhiteningTransform{T}, z::AbstractVector{T}) where {T<:Base.IEEEFloat}
 
-Transform `z` to a non-centered, correlated and scaled vector, i.e.
-`x = μ + W⁻¹ * z`, using the provided kernel. This is the inverse of `whiten(kernel, x)`.
+Transform `z` to the original coordinate system of a non-whitened vector
+belonging to the kernel, `K`, i.e. `x = μ + W⁻¹ * z`.
+This is the inverse of `whiten(K, x)`.
+
+If `K` compresses `n ↦ p`, then `x ∈ ℝⁿ`.
 """
 function unwhiten(
     kern::AbstractWhiteningTransform{T},
@@ -56,9 +62,10 @@ function unwhiten(
 end
 
 """
-    mahalanobis(kernel::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
+    mahalanobis(K::AbstractWhiteningTransform{T}, x::AbstractVector{T}) where {T<:Base.IEEEFloat}
 
-Return the Mahalanobis distance, `√((x - μ)' * Σ⁻¹ * (x - μ))`.
+Return the Mahalanobis distance, `√((x - μ)' * Σ⁻¹ * (x - μ))`, computed using the
+transformation kernel, `K`.
 """
 function mahalanobis(
     kern::AbstractWhiteningTransform{T},
@@ -70,7 +77,8 @@ end
 
 # This results in fewer allocations if the operands fit in the cache.
 # In most circumstances, it will be faster to do gemv! and axpy! (i.e. 5-arg mul!)
-# and pay the cost of the allocation.
+# and pay the cost of the allocation. In practice, this is almost always slower.
+#=
 function mahalanobis_noalloc(
     kern::AbstractWhiteningTransform{T},
     x::AbstractVector{T},
@@ -82,12 +90,17 @@ function mahalanobis_noalloc(
     end
     √s
 end
+=#
 
 function whiten!(
     Z::AbstractMatrix{T},
     kern::AbstractWhiteningTransform{T},
     X::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    Z .= kern.negWμ'
+    mul!(Z, X, kern.W', true, true)
+    #=
+    # Body if supporting both orientations
     if size(X, 2) == input_size(kern)
         Z .= kern.negWμ'
         mul!(Z, X, kern.W', true, true)
@@ -95,12 +108,17 @@ function whiten!(
         Z .= kern.negWμ
         mul!(Z, kern.W, X, true, true)
     end
+    =#
 end
 function unwhiten!(
     X::AbstractMatrix{T},
     kern::AbstractWhiteningTransform{T},
     Z::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    X .= kern.μ'
+    mul!(X, Z, kern.W⁻¹', true, true)
+    #=
+    # Body if supporting both orientations
     if size(X, 2) == input_size(kern)
         X .= kern.μ'
         mul!(X, Z, kern.W⁻¹', true, true)
@@ -108,44 +126,91 @@ function unwhiten!(
         X .= kern.μ
         mul!(X, kern.W⁻¹, Z, true, true)
     end
+    =#
 end
 
+"""
+    whiten(K::AbstractWhiteningTransform{T}, X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+
+Transform the rows of `X` to whitened vectors, i.e. `Z = (X .- μᵀ) * Wᵀ`,
+using the provided kernel. That is, `X` is an `m × n` matrix and `K` is a transformation
+kernel whose input dimension is `n`.
+
+If `K` compresses `n ↦ p`, i.e. `z = Wx : ℝⁿ ↦ ℝᵖ`, then `Z` is an `m × p` matrix.
+"""
 function whiten(
     kern::AbstractWhiteningTransform{T},
     X::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    whiten!(similar(X, size(X, 1), output_size(kern)), kern, X)
+    #=
+    # Body if supporting both orientations
     m, n = size(X)
     if n == input_size(kern)
-        # muladd(X, kern.W', kern.negWμ')
-        whiten!(similar(X, m, output_size(kern)), kern, X)
+        muladd(X, kern.W', kern.negWμ')
+        whiten!(similar(X, size(X, 1), output_size(kern)), kern, X)
     else
-        # muladd(kern.W, X, kern.negWμ)
+        muladd(kern.W, X, kern.negWμ)
         whiten!(similar(X, output_size(kern), n), kern, X)
     end
+    =#
 end
+
+"""
+    unwhiten(K::AbstractWhiteningTransform{T}, Z::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+
+Transform the rows of `Z` to unwhitened vectors, i.e. `X = Z * (W⁻¹)ᵀ .+ μᵀ`,
+using the provided kernel. That is, `Z` is an `m × p` matrix and `K` is a transformation
+kernel whose output dimension is `p`.
+
+If `K` compresses `n ↦ p`, i.e. `z = Wx : ℝⁿ ↦ ℝᵖ`, then `X` is an `m × n` matrix.
+"""
 function unwhiten(
     kern::AbstractWhiteningTransform{T},
     Z::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    unwhiten!(similar(Z, size(Z, 1), input_size(kern)), kern, Z)
+    #=
+    # Body if supporting both orientations
     m, n = size(Z)
     if n == output_size(kern)
-        # muladd(Z, kern.W⁻¹', kern.μ')
-        unwhiten!(similar(Z, m, input_size(kern)), kern, Z)
+        muladd(Z, kern.W⁻¹', kern.μ')
+        unwhiten!(similar(Z, size(Z, 1), input_size(kern)), kern, Z)
     else
-        # muladd(kern.W⁻¹, Z, kern.μ)
+        muladd(kern.W⁻¹, Z, kern.μ)
         unwhiten!(similar(Z, input_size(kern), n), kern, Z)
     end
+   =#
 end
 
 
+"""
+    mahalanobis(K::AbstractWhiteningTransform{T}, X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+
+Return the Mahalanobis distance, `√((x - μ)' * Σ⁻¹ * (x - μ))`, computed for each
+row in `X`, using the transformation kernel, `K`.
+"""
 function mahalanobis(
     kern::AbstractWhiteningTransform{T},
     X::AbstractMatrix{T},
 ) where {T<:Base.IEEEFloat}
+    Z = whiten(kern, X)
+    out = zeros(T, size(Z, 1))
+    for j in axes(Z, 2)
+        for i in eachindex(axes(Z, 1), out)
+            out[i] += abs2(Z[i, j])
+        end
+    end
+    for i in eachindex(out)
+        out[i] = √out[i]
+    end
+    out
+    #=
+    # Body if supporting both orientations
     m, n = size(X)
     Z = whiten(kern, X)
     if n == input_size(kern)
-        out = similar(Z, m, 1)
+        out = zeros(T, m, 1)
         k = firstindex(Z, 2)
         for j in axes(Z, 2)
             for i in eachindex(axes(Z, 1), axes(out, 1))
@@ -157,7 +222,7 @@ function mahalanobis(
         end
         out
     else
-        out = similar(Z, 1, n)
+        out = zeros(T, 1, n)
         k = firstindex(Z, 1)
         for j in eachindex(axes(Z, 2), axes(out, 2))
             s = zero(T)
@@ -168,4 +233,5 @@ function mahalanobis(
         end
         out
     end
+    =#
 end
