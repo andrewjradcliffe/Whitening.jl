@@ -7,6 +7,7 @@ public whiten, unwhiten, mahalanobis
 using LinearAlgebra
 
 include("abstract.jl")
+include("common.jl")
 include("ZCA.jl")
 include("ZCAcor.jl")
 include("PCA.jl")
