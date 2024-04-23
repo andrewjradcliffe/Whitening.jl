@@ -18,7 +18,7 @@ struct PCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         P = V⁻¹² * Σ * V⁻¹²
         F = eigen(P, sortby = -)
         Λ¹² = sqrt.(F.values)
-        Λ⁻¹² = inv.(Λ⁻¹²)
+        Λ⁻¹² = inv.(Λ¹²)
         B¹² = Diagonal(Λ¹²)
         B⁻¹² = Diagonal(Λ⁻¹²)
         W = B⁻¹² * F.vectors' * V⁻¹²
