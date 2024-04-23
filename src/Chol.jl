@@ -15,7 +15,7 @@ struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         F = cholesky(Σ)
         W = F.U
         W⁻¹ = inv(F.U)
-        new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
+        new{T}(μ, Σ, F, W, W⁻¹, -(W * μ))
     end
 end
 
