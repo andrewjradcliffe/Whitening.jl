@@ -18,9 +18,9 @@ struct GeneralizedPCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     function GeneralizedPCAcor{T}(
         μ::Vector{T},
         Σ::Matrix{T};
-        num_components::Union{Int, Nothing},
-        vmin::Union{T, Nothing},
-        rtol::Union{T, Nothing},
+        num_components::Union{Int,Nothing},
+        vmin::Union{T,Nothing},
+        rtol::Union{T,Nothing},
     ) where {T<:Base.IEEEFloat}
         checkargs(μ, Σ, num_components, vmin)
         # J, J₀ = nz_z(v)
@@ -41,7 +41,7 @@ struct GeneralizedPCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         U = @view(F.vectors[:, 1:n⃰])
         W = B⁻¹² * U' * V⁻¹²
         W⁻¹ = V¹² * U * B¹²
-        new{T}(μ, Σ, F, W, W⁻¹, -(W * μ))
+        new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
     end
 end
 
@@ -84,9 +84,9 @@ end
 
 """
     GeneralizedPCAcor(μ::AbstractVector{T}, Σ::AbstractMatrix{T};
-                   num_components::Union{Int, Nothing}=nothing,
-                   vmin::Union{T, Nothing}=nothing,
-                   rtol::Union{T, Nothing}=nothing) where {T<:Base.IEEEFloat}
+                      num_components::Union{Int, Nothing}=nothing,
+                      vmin::Union{T, Nothing}=nothing,
+                      rtol::Union{T, Nothing}=nothing) where {T<:Base.IEEEFloat}
 
 Construct a generalized PCAcor transformer from the mean vector, `μ` ∈ ℝⁿ,
 and a covariance matrix, `Σ` ∈ ℝⁿˣⁿ; `Σ` must be symmetric and
@@ -115,9 +115,9 @@ be chosen.
 function GeneralizedPCAcor(
     μ::AbstractVector{T},
     Σ::AbstractMatrix{T};
-    num_components::Union{Int, Nothing}=nothing,
-    vmin::Union{T, Nothing}=nothing,
-    rtol::Union{T, Nothing}=nothing,
+    num_components::Union{Int,Nothing} = nothing,
+    vmin::Union{T,Nothing} = nothing,
+    rtol::Union{T,Nothing} = nothing,
 ) where {T<:Base.IEEEFloat}
     GeneralizedPCAcor{T}(
         collect(μ),
@@ -126,4 +126,23 @@ function GeneralizedPCAcor(
         vmin = vmin,
         rtol = rtol,
     )
+end
+
+"""
+    GeneralizedPCAcor(X::AbstractMatrix{T};
+                      num_components::Union{Int, Nothing}=nothing,
+                      vmin::Union{T, Nothing}=nothing,
+                      rtol::Union{T, Nothing}=nothing) where {T<:Base.IEEEFloat}
+
+Construct a generalized PCAcor transformer from the `q × n` matrix,
+each row of which is a sample of an `n`-dimensional random variable.
+"""
+function GeneralizedPCAcor(
+    X::AbstractMatrix{T};
+    num_components::Union{Int,Nothing} = nothing,
+    vmin::Union{T,Nothing} = nothing,
+    rtol::Union{T,Nothing} = nothing,
+) where {T<:Base.IEEEFloat}
+    μ, Σ = _estimate(X)
+    GeneralizedPCAcor{T}(μ, Σ, num_components = num_components, vmin = vmin, rtol = rtol)
 end
