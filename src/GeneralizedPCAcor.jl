@@ -23,15 +23,10 @@ struct GeneralizedPCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         rtol::Union{T,Nothing},
     ) where {T<:Base.IEEEFloat}
         checkargs(μ, Σ, num_components, vmin)
-        # J, J₀ = nz_z(v)
-        # v¹² = sqrt.(getindex.(Ref(v), J))
-        # v⁻¹² = inv.(v¹²)
-        # V⁻¹² = Diagonal(inv.(v¹²))
-        # V¹² = Diagonal(v¹²)
-        # P = V⁻¹² * Σ[J, J] * V⁻¹²
         v¹² = sqrt.(diag(Σ))
         V⁻¹² = Diagonal(inv.(v¹²))
         V¹² = Diagonal(v¹²)
+        P = V⁻¹² * Σ * V⁻¹²
         F = eigen(P, sortby = -)
         n⃰ = determine_nstar(F.values, num_components, vmin, rtol)
         Λ¹² = sqrt.(@view(F.values[1:n⃰]))
@@ -42,43 +37,6 @@ struct GeneralizedPCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         W = B⁻¹² * U' * V⁻¹²
         W⁻¹ = V¹² * U * B¹²
         new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
-    end
-end
-
-function nz_z(v::Vector{T}) where {T}
-    J₀ = findall(iszero, v)
-    n = length(v)
-    k = length(J₀)
-    if k == 0
-        collect(1:n), J₀
-    else
-        m = n - k
-        J = Vector{Int}(undef, m)
-        i = 1
-        l = 1
-        j = J₀[l]
-        i′ = 1
-        while i ≤ m && i′ ≤ n
-            if i′ == j
-                l += 1
-                # j = J₀[l]
-                if l ≤ k
-                    j = J₀[l]
-                else
-                    i′ += 1
-                    while i ≤ m && i′ ≤ n
-                        J[i] = i′
-                        i += 1
-                        i′ += 1
-                    end
-                end
-            else
-                J[i] = i′
-                i += 1
-            end
-            i′ += 1
-        end
-        J, J₀
     end
 end
 
