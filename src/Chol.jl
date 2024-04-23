@@ -19,9 +19,6 @@ struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     end
 end
 
-Chol(μ::AbstractVector{T}, Σ::AbstractMatrix{T}) where {T<:Base.IEEEFloat} =
-    Chol{T}(collect(μ), collect(Σ))
-
 """
     Chol(μ::AbstractVector{T}, Σ::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
 

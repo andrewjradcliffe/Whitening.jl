@@ -23,9 +23,6 @@ struct ZCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     end
 end
 
-ZCA(μ::AbstractVector{T}, Σ::AbstractMatrix{T}) where {T<:Base.IEEEFloat} =
-    ZCA{T}(collect(μ), collect(Σ))
-
 """
     ZCA(μ::AbstractVector{T}, Σ::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
 
