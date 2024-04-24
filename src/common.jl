@@ -1,6 +1,7 @@
 function ispossemidef(A::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
     Λ = eigvals(A)
-    isreal(Λ) && all(≥(-eps(T)), Λ)
+    tol = -(length(Λ) * eps(T))
+    isreal(Λ) && all(≥(tol), Λ)
 end
 
 function checkargs(μ::Vector{T}, Σ::Matrix{T}) where {T}
