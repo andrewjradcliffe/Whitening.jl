@@ -81,7 +81,7 @@ end
 
 function findlastcomponent(r::T, Λ::Vector{T}) where {T<:Base.IEEEFloat}
     n = length(Λ)
-    if n == 0
+    if n == 0 || iszero(r)
         0
     elseif isone(r)
         n
@@ -109,10 +109,22 @@ function findlastrank(rtol::T, Λ::Vector{T}) where {T<:Base.IEEEFloat}
     end
 end
 
-function _estimate(X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+@inline function _cov_by_gemm(m⁻¹::T, A::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+    BLAS.gemm('T', 'N', m⁻¹, A, A)
+end
+@inline _cov_by_gemm(m⁻¹::Float16, A::AbstractMatrix{Float16}) = rmul!(A'A, m⁻¹)
+
+@inline function _loc_by_gemv(W::AbstractMatrix{T}, μ::AbstractVector{T}) where {T<:Base.IEEEFloat}
+    BLAS.gemv('N', -one(T), W, μ)
+end
+@inline function _loc_by_gemv(W::AbstractMatrix{Float16}, μ::AbstractVector{Float16})
+    rmul!(W * μ, -one(Float16))
+end
+
+@inline function _estimate(X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
     m⁻¹ = convert(T, inv(size(X, 1)))
     μ = rmul!(dropdims(sum(X, dims = 1), dims = 1), m⁻¹)
     A = X .- μ'
-    Σ = BLAS.gemm('T', 'N', m⁻¹, A, A)
+    Σ = _cov_by_gemm(m⁻¹, A)
     μ, Σ
 end
