@@ -32,7 +32,7 @@ struct GeneralizedPCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         U = @view(F.vectors[:, 1:n⃰])
         W = B⁻¹² * U'
         W⁻¹ = U * B¹²
-        new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
+        new{T}(μ, Σ, F, W, W⁻¹, _loc_by_gemv(W, μ))
     end
 end
 

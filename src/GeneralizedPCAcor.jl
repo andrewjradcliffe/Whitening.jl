@@ -36,7 +36,7 @@ struct GeneralizedPCAcor{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         U = @view(F.vectors[:, 1:n⃰])
         W = B⁻¹² * U' * V⁻¹²
         W⁻¹ = V¹² * U * B¹²
-        new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
+        new{T}(μ, Σ, F, W, W⁻¹, _loc_by_gemv(W, μ))
     end
 end
 
@@ -104,3 +104,18 @@ function GeneralizedPCAcor(
     μ, Σ = _estimate(X)
     GeneralizedPCAcor{T}(μ, Σ, num_components = num_components, vmin = vmin, rtol = rtol)
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -19,7 +19,7 @@ struct ZCA{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
         B⁻¹² = Diagonal(Λ⁻¹²)
         W = F.vectors * B⁻¹² * F.vectors'
         W⁻¹ = F.vectors * B¹² * F.vectors'
-        new{T}(μ, Σ, F, W, W⁻¹, BLAS.gemv('N', -one(T), W, μ))
+        new{T}(μ, Σ, F, W, W⁻¹, _loc_by_gemv(W, μ))
     end
 end
 
