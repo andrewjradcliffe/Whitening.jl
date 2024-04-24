@@ -1,9 +1,9 @@
 @testset "positive semi-definite predicate" begin
-    @test ispossemidef([1 0 0; 1 -2eps() 1; 0 0 1])
-    @test !ispossemidef([1 0 0; 1 -4eps() 1; 0 0 1])
+    @test @inferred ispossemidef([1 0 0; 1 -2eps() 1; 0 0 1])
+    @test @inferred !ispossemidef([1 0 0; 1 -4eps() 1; 0 0 1])
 
     A = randn(4, 4)
-    @test ispossemidef(A'A)
+    @test @inferred ispossemidef(A'A)
 end
 
 @testset "checkargs" begin
@@ -61,19 +61,20 @@ end
     rtol = 11 * 2 * eps()
     vmin = 0.7
     num_components = 5
-    @test determine_nstar(Λ, num_components, vmin, rtol) == 5
-    @test determine_nstar(Λ, num_components, vmin, nothing) == 5
-    @test determine_nstar(Λ, num_components, nothing, rtol) == 5
-    @test determine_nstar(Λ, nothing, vmin, rtol) == 6
-    @test determine_nstar(Λ, num_components, nothing, nothing) == num_components
-    @test determine_nstar(Λ, nothing, vmin, nothing) == 6
-    @test determine_nstar(Λ, nothing, nothing, rtol) == 9
-    @test determine_nstar(Λ, nothing, nothing, nothing) == 9
+    @test @inferred determine_nstar(Λ, num_components, vmin, rtol) == 5
+    @test @inferred determine_nstar(Λ, num_components, vmin, nothing) == 5
+    @test @inferred determine_nstar(Λ, num_components, nothing, rtol) == 5
+    @test @inferred determine_nstar(Λ, nothing, vmin, rtol) == 6
+    @test @inferred determine_nstar(Λ, num_components, nothing, nothing) == num_components
+    @test @inferred determine_nstar(Λ, nothing, vmin, nothing) == 6
+    @test @inferred determine_nstar(Λ, nothing, nothing, rtol) == 9
+    @test @inferred determine_nstar(Λ, nothing, nothing, nothing) == 9
 
-    @test determine_nstar(Float64[], nothing, nothing, nothing) == 0
+    @test @inferred determine_nstar(Float64[], nothing, nothing, nothing) == 0
 
     # pathological case, but function not public
-    @test determine_nstar(Float64[], num_components, nothing, nothing) == num_components
+    @test @inferred determine_nstar(Float64[], num_components, nothing, nothing) ==
+                    num_components
 end
 
 @testset "findlastcomponent" begin
@@ -91,16 +92,16 @@ end
         -4.4036492387932593e-16,
     ]
 
-    @test findlastcomponent(0.0, Λ) == 0
-    @test findlastcomponent(1.0, Λ) == 11
+    @test @inferred findlastcomponent(0.0, Λ) == 0
+    @test @inferred findlastcomponent(1.0, Λ) == 11
     for (rtol, rhs) in zip(
         (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99),
         (2, 2, 3, 4, 4, 5, 6, 7, 9, 9, 10),
     )
-        @test findlastcomponent(rtol, Λ) == rhs
+        @test @inferred findlastcomponent(rtol, Λ) == rhs
     end
 
-    @test findlastcomponent(0.5, Float64[]) == 0
+    @test @inferred findlastcomponent(0.5, Float64[]) == 0
 end
 
 @testset "findlastrank" begin
@@ -118,16 +119,16 @@ end
         -4.4036492387932593e-16,
     ]
 
-    @test findlastrank(0.0, Λ) == 9
-    @test findlastrank(-eps(), Λ) == 11
+    @test @inferred findlastrank(0.0, Λ) == 9
+    @test @inferred findlastrank(-eps(), Λ) == 11
     for (rtol, rhs) in zip(
         (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
         (9, 8, 8, 6, 5, 3, 2, 2, 1, 0),
     )
-        @test findlastrank(rtol, Λ) == rhs
+        @test @inferred findlastrank(rtol, Λ) == rhs
     end
 
-    @test findlastrank(eps(), Float64[]) == 0
+    @test @inferred findlastrank(eps(), Float64[]) == 0
 end
 
 function _estimate2(X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
@@ -142,7 +143,7 @@ end
         for m in (n >> 1, n, n << 1)
             rng = Xoshiro(0xc0ffee_cafe_beef12)
             X = randn(rng, T, m, n) .* randexp(rng, T, m, n)
-            μ, Σ = _estimate(X)
+            μ, Σ = @inferred _estimate(X)
             μ′, Σ′ = _estimate2(X)
             @test μ ≈ μ′
             @test Σ ≈ Σ′

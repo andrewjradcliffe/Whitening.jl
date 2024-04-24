@@ -22,16 +22,16 @@
         ρ₂₁*σ₂*σ₁ T(1.0)*abs2(σ₂) ρ₂₃*σ₂*σ₃
         ρ₃₁*σ₃*σ₁ ρ₃₂*σ₃*σ₂ T(1.0)*abs2(σ₃)
     ]
-    kern = k(μ, Σ)
+    kern = @inferred k(μ, Σ)
     z = randn(rng, T, 3)
-    x = unwhiten(kern, z)
-    z_rt = whiten(kern, x)
+    x = @inferred unwhiten(kern, z)
+    z_rt = @inferred whiten(kern, x)
     @test all(z .≈ z_rt)
 
     Z = randn(rng, T, 100, 3)
-    X = unwhiten(kern, Z)
-    Z_rt = whiten(kern, X)
-    @test all(Z .≈ Z_rt)
+    X = @inferred unwhiten(kern, Z)
+    Z_rt = @inferred whiten(kern, X)
+    @test all(eachrow(Z) .≈ eachrow(Z_rt))
 
     @test_throws DimensionMismatch unwhiten(kern, Z')
     @test_throws DimensionMismatch whiten(kern, X')
@@ -70,7 +70,6 @@ end
 
     for f in (*, +, /, -, ^, %)
         X = [T(f(i, j)) for i = 1:5, j = 1:3]
-        @show X
         @test begin
             mahalanobis(pca, X) ≈
             mahalanobis(pcacor, X) ≈
@@ -79,9 +78,13 @@ end
             mahalanobis(gpca, X) ≈
             mahalanobis(gpcacor, X)
         end
+
     end
+    X = [T(i * j) for i = 1:5, j = 1:3]
     for t in (pca, pcacor, zca, zcacor, gpca, gpcacor, chol)
         @test_throws DimensionMismatch mahalanobis(t, X')
+        @inferred mahalanobis(t, X)
+        @inferred mahalanobis(t, x)
     end
 end
 
@@ -148,22 +151,4 @@ end
         @test size(gpca.W) == (2, p + 2)
         @test size(gpca.W⁻¹) == (p + 2, 2)
     end
-end
-
-
-using BenchmarkTools
-for p = 1:3
-    local n = 10^p
-    local m = 10^(p + 1)
-    local X = randn(m, n) .* randexp(m, n)
-    local gpca = GeneralizedPCA(X)
-    local x = randn(n)
-    local cache = Cache(gpca)
-    printstyled("n = ", n, " m = ", m, '\n', color = :magenta)
-    local bm1 = @benchmark mahalanobis($gpca, $x)
-    local bm2 = @benchmark mahalanobis_cached($cache, $x)
-    show(stdout, "text/plain", bm1)
-    println()
-    show(stdout, "text/plain", bm2)
-    println()
 end
