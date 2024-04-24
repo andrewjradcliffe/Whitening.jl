@@ -131,12 +131,6 @@ end
     @test @inferred findlastrank(eps(), Float64[]) == 0
 end
 
-function _estimate2(X::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
-    μ = dropdims(mean(X, dims = 1), dims = 1)
-    Σ = cov(X, dims = 1, corrected = false)
-    μ, Σ
-end
-
 @testset "_estimate" for T in (Float16, Float32, Float64)
     for p = 2:10
         n = 1 << p
