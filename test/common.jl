@@ -1,4 +1,3 @@
-
 @testset "positive semi-definite predicate" begin
     @test ispossemidef([1 0 0; 1 -2eps() 1; 0 0 1])
     @test !ispossemidef([1 0 0; 1 -4eps() 1; 0 0 1])
