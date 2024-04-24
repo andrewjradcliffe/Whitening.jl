@@ -235,3 +235,25 @@ function mahalanobis(
     end
     =#
 end
+
+struct Cache{T<:Base.IEEEFloat}
+    WᵀW::Matrix{T}
+    WᵀWμ::Vector{T}
+    μᵀWᵀWμ::T
+end
+function Cache(K::AbstractWhiteningTransform{T}) where {T<:Base.IEEEFloat}
+    WᵀW = K.W' * K.W
+    WᵀWμ = WᵀW * K.μ
+    μᵀWᵀWμ = K.μ ⋅ WᵀWμ
+    Cache(WᵀW, WᵀWμ, μᵀWᵀWμ)
+end
+
+function mahalanobis_cached(
+    # WᵀW::Matrix{T},
+    # WᵀWμ::Vector{T},
+    # μᵀWᵀWμ::T,
+    K::Cache{T},
+    x::AbstractVector{T},
+    ) where {T<:Base.IEEEFloat}
+    √(dot(x, K.WᵀW, x) - 2 * (x ⋅ K.WᵀWμ) + K.μᵀWᵀWμ)
+end
