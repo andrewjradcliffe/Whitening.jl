@@ -15,5 +15,6 @@ include("PCAcor.jl")
 include("Chol.jl")
 include("GeneralizedPCA.jl")
 include("GeneralizedPCAcor.jl")
+include("precompile.jl")
 
 end # module Whitening
