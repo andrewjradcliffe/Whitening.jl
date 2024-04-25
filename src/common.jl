@@ -109,15 +109,13 @@ function findlastrank(rtol::T, Λ::Vector{T}) where {T<:Base.IEEEFloat}
     end
 end
 
-@inline function _cov_by_gemm(m⁻¹::T, A::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
+# Strictly for internal use
+@inline function _cov_by_gemm(m⁻¹::T, A::Matrix{T}) where {T<:Base.IEEEFloat}
     BLAS.gemm('T', 'N', m⁻¹, A, A)
 end
-@inline _cov_by_gemm(m⁻¹::Float16, A::AbstractMatrix{Float16}) = rmul!(A'A, m⁻¹)
+@inline _cov_by_gemm(m⁻¹::Float16, A::Matrix{Float16}) = rmul!(A'A, m⁻¹)
 
-@inline function _loc_by_gemv(
-    W::AbstractMatrix{T},
-    μ::AbstractVector{T},
-) where {T<:Base.IEEEFloat}
+@inline function _loc_by_gemv(W::Matrix{T}, μ::AbstractVector{T}) where {T<:Base.IEEEFloat}
     BLAS.gemv('N', -one(T), W, μ)
 end
 @inline function _loc_by_gemv(W::AbstractMatrix{Float16}, μ::AbstractVector{Float16})
