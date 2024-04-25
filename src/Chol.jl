@@ -12,7 +12,7 @@ struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     negWμ::Vector{T}
     function Chol{T}(μ::Vector{T}, Σ::Matrix{T}) where {T<:Base.IEEEFloat}
         checkargs(μ, Σ)
-        F = cholesky(inv(Σ))
+        F = cholesky(hermitianpart!(inv(Σ)))
         W = F.U
         W⁻¹ = inv(F.U)
         new{T}(μ, Σ, F, W, W⁻¹, -(W * μ))
