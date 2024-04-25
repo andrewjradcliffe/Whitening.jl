@@ -180,7 +180,7 @@ function unwhiten(
         muladd(kern.W⁻¹, Z, kern.μ)
         unwhiten!(similar(Z, input_size(kern), n), kern, Z)
     end
-   =#
+    =#
 end
 
 
@@ -236,6 +236,8 @@ function mahalanobis(
     =#
 end
 
+#=
+Removes allocation, but is slower even moderate `n` where `n` is input_size(K).
 struct Cache{T<:Base.IEEEFloat}
     WᵀW::Matrix{T}
     WᵀWμ::Vector{T}
@@ -254,6 +256,7 @@ function mahalanobis_cached(
     # μᵀWᵀWμ::T,
     K::Cache{T},
     x::AbstractVector{T},
-    ) where {T<:Base.IEEEFloat}
+) where {T<:Base.IEEEFloat}
     √(dot(x, K.WᵀW, x) - 2 * (x ⋅ K.WᵀWμ) + K.μᵀWᵀWμ)
 end
+=#

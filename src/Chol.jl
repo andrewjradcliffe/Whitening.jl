@@ -7,8 +7,8 @@ struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}
     F::Cholesky{T,Matrix{T}}
-    W::UpperTriangular{T, Matrix{T}}
-    W⁻¹::UpperTriangular{T, Matrix{T}}
+    W::UpperTriangular{T,Matrix{T}}
+    W⁻¹::UpperTriangular{T,Matrix{T}}
     negWμ::Vector{T}
     function Chol{T}(μ::Vector{T}, Σ::Matrix{T}) where {T<:Base.IEEEFloat}
         checkargs(μ, Σ)
