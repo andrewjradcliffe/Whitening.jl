@@ -7,12 +7,12 @@ struct Chol{T<:Base.IEEEFloat} <: AbstractWhiteningTransform{T}
     μ::Vector{T}
     Σ::Matrix{T}
     F::Cholesky{T,Matrix{T}}
-    W::Matrix{T}
-    W⁻¹::Matrix{T}
+    W::UpperTriangular{T, Matrix{T}}
+    W⁻¹::UpperTriangular{T, Matrix{T}}
     negWμ::Vector{T}
     function Chol{T}(μ::Vector{T}, Σ::Matrix{T}) where {T<:Base.IEEEFloat}
         checkargs(μ, Σ)
-        F = cholesky(Σ)
+        F = cholesky(inv(Σ))
         W = F.U
         W⁻¹ = inv(F.U)
         new{T}(μ, Σ, F, W, W⁻¹, -(W * μ))
