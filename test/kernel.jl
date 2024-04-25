@@ -64,6 +64,7 @@ end
         mahalanobis(pcacor, x) ≈
         mahalanobis(zca, x) ≈
         mahalanobis(zcacor, x) ≈
+        mahalanobis(chol, x) ≈
         mahalanobis(gpca, x) ≈
         mahalanobis(gpcacor, x)
     end
@@ -75,6 +76,7 @@ end
             mahalanobis(pcacor, X) ≈
             mahalanobis(zca, X) ≈
             mahalanobis(zcacor, X) ≈
+            mahalanobis(chol, X) ≈
             mahalanobis(gpca, X) ≈
             mahalanobis(gpcacor, X)
         end
