@@ -1,6 +1,6 @@
 using Documenter, Whitening
 
-makedocs(sitename="Whitening.jl")
+makedocs()
 
 deploydocs(
     repo = "github.com/andrewjradcliffe/Whitening.jl.git",
