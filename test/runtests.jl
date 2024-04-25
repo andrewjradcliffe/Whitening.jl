@@ -1,4 +1,5 @@
 using Whitening, LinearAlgebra, Test, Random, Statistics
+# public
 using Whitening:
     PCA,
     PCAcor,
@@ -10,6 +11,16 @@ using Whitening:
     whiten,
     unwhiten,
     mahalanobis
+# private
+using Whitening:
+    ispossemidef,
+    checkargs,
+    determine_nstar,
+    findlastcomponent,
+    findlastrank,
+    _cov_by_gemm,
+    _loc_by_gemv,
+    _estimate
 
 const TESTS = ["kernel", "common"]
 
