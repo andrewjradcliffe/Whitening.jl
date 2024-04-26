@@ -1,7 +1,7 @@
 using Documenter, Whitening
 
 makedocs(
-    sitename="Whitening.jl"
+    sitename="Whitening.jl",
     pages = [
         "Home" => "index.md",
     ]
