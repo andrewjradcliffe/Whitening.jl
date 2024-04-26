@@ -11,5 +11,6 @@ deploydocs(
     repo = "github.com/andrewjradcliffe/Whitening.jl.git",
     branch="gh-pages",
     devbranch="main",
-    versions = nothing,
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"]
+    devurl = "dev",
 )
