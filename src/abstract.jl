@@ -1,5 +1,5 @@
 """
-Abstract type to which represents a whitening transformation.
+Abstract type which represents a [whitening transformation](https://en.wikipedia.org/wiki/Whitening_transformation).
 """
 abstract type AbstractWhiteningTransform{T<:Base.IEEEFloat} end
 
