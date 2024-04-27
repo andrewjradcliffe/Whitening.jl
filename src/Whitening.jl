@@ -1,8 +1,11 @@
 module Whitening
 
-public AbstractWhiteningTransform, PCA, PCAcor, ZCA, ZCAcor, Chol
-public GeneralizedPCA, GeneralizedPCAcor
-public whiten, unwhiten, mahalanobis
+# Until Julia 1.11 is stable, we hack in `public` symbol support
+@static if VERSION >= v"1.11"
+    @eval $(Meta.parse(
+        "public AbstractWhiteningTransform, PCA, PCAcor, ZCA, ZCAcor, Chol, GeneralizedPCA, GeneralizedPCAcor, whiten, unwhiten, mahalanobis",
+    ))
+end
 
 using LinearAlgebra
 
