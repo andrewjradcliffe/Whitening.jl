@@ -154,3 +154,32 @@ end
         @test size(gpca.W⁻¹) == (p + 2, 2)
     end
 end
+
+@testset "property: inverse of whitening matrix equal to transpose of cross-covariance; kernel: $k, $T" for k in (
+    PCA,
+    PCAcor,
+    ZCA,
+    ZCAcor,
+    Chol,
+    GeneralizedPCA,
+    GeneralizedPCAcor,
+    ),
+    T in (Float16, Float32, Float64)
+
+    ρ₁₂ = ρ₂₁ = T(0.7)
+    ρ₁₃ = ρ₃₁ = T(0.5)
+    ρ₂₃ = ρ₃₂ = T(0.3)
+    σ₁ = T(1.0)
+    σ₂ = T(0.5)
+    σ₃ = T(2.0)
+    μ = T[3, 2, 1]
+    Σ = T[
+        T(1.0)*abs2(σ₁) ρ₁₂*σ₁*σ₂ ρ₁₃*σ₁*σ₃
+        ρ₂₁*σ₂*σ₁ T(1.0)*abs2(σ₂) ρ₂₃*σ₂*σ₃
+        ρ₃₁*σ₃*σ₁ ρ₃₂*σ₃*σ₂ T(1.0)*abs2(σ₃)
+    ]
+
+    kern = k(μ, Σ)
+    ϕ = kern.W * Σ
+    @test kern.W⁻¹ ≈ ϕ'
+end
