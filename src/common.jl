@@ -1,3 +1,5 @@
+using LinearAlgebra
+
 function ispossemidef(A::AbstractMatrix{T}) where {T<:Base.IEEEFloat}
     Λ = eigvals(A)
     tol = -(length(Λ) * eps(T))
@@ -127,5 +129,6 @@ end
     μ = rmul!(dropdims(sum(X, dims = 1), dims = 1), m⁻¹)
     A = X .- μ'
     Σ = _cov_by_gemm(m⁻¹, A)
+    hermitianpart!(Σ)
     μ, Σ
 end
